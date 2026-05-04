@@ -3,211 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snake.io Pro - XaZach Edition</title>
+    <title>SNAKE.IO: IZMIR EDITION</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --snake-head: #38bdf8;
-            --snake-body: #0ea5e9;
-            --food-color: #ef4444;
+            --bg-color: #0d1117; /* Çok koyu gri/siyah arka plan */
+            --grid-color: #1a202c; /* Belirgin ızgara çizgileri */
+            --snake-head: #a855f7; /* Canlı Mor (Skin 1 Varsayılan) */
+            --snake-body: #9333ea; /* Daha koyu mor gövde */
+            --candy-1: #fbbf24; /* Amber Şeker */
+            --candy-2: #f472b6; /* Pembe Şeker */
+            --danger-zone: #dc2626; /* Kırmızı Ölüm Bölgesi */
+            --text-color: #e2e8f0;
+            --ui-bg: rgba(13, 17, 23, 0.9);
+            --border-color: #38bdf8; /* Cam Mavisi çerçeveler */
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
 
         body {
             background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif; /* Daha keskin ve modern yazı tipi */
             height: 100vh;
-            margin: 0;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
             overflow: hidden;
             touch-action: none;
         }
 
-        #game-container {
+        /* --- Yan Arayüz (UI) - Sol Taraf --- */
+        #ui-container {
+            width: 320px;
+            height: 100%;
+            background-color: var(--ui-bg);
+            display: flex;
+            flex-direction: column;
+            border-right: 3px solid var(--border-color);
+            padding: 30px 20px;
+            z-index: 100;
+        }
+
+        #ui-header {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--border-color);
+            text-align: center;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        .ui-section { margin-bottom: 30px; }
+
+        .ui-label { font-size: 14px; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+
+        #score-board {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        #score-label { font-size: 16px; color: #94a3b8; }
+        #score-value { font-size: 48px; font-weight: 800; color: white; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
+        /* --- Skin (Kıyafet) Seçimi --- */
+        .skin-options { display: flex; gap: 12px; justify-content: center; }
+        .skin-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 4px solid transparent;
+            transition: 0.2s ease-in-out;
             position: relative;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            overflow: hidden;
-            border: 4px solid #1e293b;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .skin-btn:hover { transform: translateY(-3px); }
+        .skin-btn.active { border-color: white; transform: scale(1.15); box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+
+        /* Skin Renkleri (Gövde, Baş) */
+        .skin-1 { background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); }
+        .skin-2 { background: linear-gradient(135deg, #f87171 0%, #dc2626 100%); }
+        .skin-3 { background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%); }
+        .skin-4 { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+
+        /* --- Kontroller/Hassasiyet --- */
+        .control-panel { display: flex; flex-direction: column; gap: 15px; }
+        #speed-board { font-size: 14px; text-align: center; color: #94a3b8; }
+
+        /* --- Başlat/Sıfırla Butonu --- */
+        button#start-btn {
+            margin-top: auto;
+            background: linear-gradient(45deg, #38bdf8 0%, #0369a1 100%);
+            border: none;
+            color: white;
+            padding: 18px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 18px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.2s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        button#start-btn:hover { background: linear-gradient(45deg, #0369a1 0%, #38bdf8 100%); transform: translateY(-2px); }
+        button#start-btn:active { transform: translateY(1px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+
+        /* --- Oyun Alanı (Canvas) - Sağ Taraf --- */
+        #game-container {
+            flex-grow: 1; /* Kalan tüm alanı kapla */
+            position: relative;
+            background-color: #000; /* Keskin siyah oyun alanı */
         }
 
         canvas {
             display: block;
-            background-image: radial-gradient(#1e293b 1px, transparent 1px);
-            background-size: 20px 20px;
-            background-color: #0f172a;
+            background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
+            background-size: 25px 25px; /* Belirgin ızgara */
+            background-color: var(--bg-color);
         }
 
-        /* Menü ve Skin Seçimi */
-        #menu {
+        /* --- Mobil Kontroller --- */
+        #mobile-controls {
+            display: none; /* Sadece mobilde grid olacak */
             position: absolute;
-            top: 50%;
+            bottom: 30px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.95);
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            border: 2px solid var(--snake-head);
+            transform: translateX(-50%);
+            grid-template-columns: repeat(3, 85px);
+            grid-template-rows: repeat(2, 85px);
+            gap: 15px;
             z-index: 10;
         }
 
-        .skin-options {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .skin-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: 0.3s;
-        }
-
-        .skin-btn.active {
-            border-color: white;
-            transform: scale(1.2);
-        }
-
-        button#start-btn {
-            background: linear-gradient(45deg, #38bdf8, #818cf8);
-            border: none;
-            color: white;
-            padding: 12px 30px;
-            border-radius: 30px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 18px;
-        }
-
-        /* Mobil Kontroller */
-        #controls {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-        }
-
         .btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            width: 85px; height: 85px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; color: rgba(255, 255, 255, 0.6);
             user-select: none;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            transition: 0.1s;
         }
 
-        .btn:active { background: rgba(56, 189, 248, 0.4); }
+        .btn:active { background: rgba(56, 189, 248, 0.3); color: white; transform: scale(0.95); border-color: rgba(56, 189, 248, 0.5); }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
 
-        #score-board {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        @media (max-width: 768px) {
-            #controls { display: grid; }
+        /* Mobilde Arayüz Düzeni */
+        @media (max-width: 1024px) {
+            body { flex-direction: column-reverse; } /* Arayüz aşağıya, oyun yukarıya */
+            #ui-container { width: 100%; height: auto; border-right: none; border-top: 3px solid var(--border-color); padding: 15px; }
+            #ui-header { display: none; }
+            #mobile-controls { display: grid; }
+            .ui-section { margin-bottom: 15px; }
+            button#start-btn { margin-top: 10px; width: 100%; }
+            #score-board { padding: 10px; }
+            #score-value { font-size: 36px; }
         }
     </style>
 </head>
 <body>
 
-    <div id="score-board">Puan: 0</div>
+    <div id="ui-container">
+        <div id="ui-header">IZMIR EDITION</div>
+
+        <div class="ui-section">
+            <div class="ui-label">Skor (Şeker Sayısı)</div>
+            <div id="score-board">
+                <div id="score-label">SNAKE Puanı</div>
+                <div id="score-value">0</div>
+            </div>
+        </div>
+
+        <div class="ui-section">
+            <div class="ui-label">Snake.io Skin (Kıyafet)</div>
+            <div class="skin-options">
+                <div class="skin-btn skin-1 active" onclick="setSkin('#a855f7', '#9333ea', 0)"></div>
+                <div class="skin-btn skin-2" onclick="setSkin('#f87171', '#dc2626', 1)"></div>
+                <div class="skin-btn skin-3" onclick="setSkin('#4ade80', '#16a34a', 2)"></div>
+                <div class="skin-btn skin-4" onclick="setSkin('#fbbf24', '#d97706', 3)"></div>
+            </div>
+        </div>
+
+        <div class="ui-section">
+            <div class="ui-label">Oyun Bilgisi</div>
+            <div class="control-panel">
+                <div id="speed-board">Oyun Hızı: <span id="speed-value">100</span>ms (Düşük = Hızlı)</div>
+            </div>
+        </div>
+
+        <button id="start-btn">OYUNA BAŞLA</button>
+    </div>
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
 
-        <div id="menu">
-            <h1>SNAKE.IO PRO</h1>
-            <p>Yılanının Rengini Seç:</p>
-            <div class="skin-options">
-                <div class="skin-btn active" style="background: #38bdf8;" onclick="setSkin('#38bdf8', '#0ea5e9', this)"></div>
-                <div class="skin-btn" style="background: #f87171;" onclick="setSkin('#f87171', '#dc2626', this)"></div>
-                <div class="skin-btn" style="background: #4ade80;" onclick="setSkin('#4ade80', '#16a34a', this)"></div>
-                <div class="skin-btn" style="background: #fbbf24;" onclick="setSkin('#fbbf24', '#d97706', this)"></div>
-                <div class="skin-btn" style="background: #c084fc;" onclick="setSkin('#c084fc', '#9333ea', this)"></div>
-            </div>
-            <button id="start-btn">OYUNA BAŞLA</button>
+        <div id="mobile-controls">
+            <div class="btn btn-up" ontouchstart="changeDir('UP')">▲</div>
+            <div class="btn btn-left" ontouchstart="changeDir('LEFT')">◀</div>
+            <div class="btn btn-down" ontouchstart="changeDir('DOWN')">▼</div>
+            <div class="btn btn-right" ontouchstart="changeDir('RIGHT')">▶</div>
         </div>
-    </div>
-
-    <div id="controls">
-        <div></div>
-        <div class="btn" ontouchstart="changeDir('UP')">▲</div>
-        <div></div>
-        <div class="btn" ontouchstart="changeDir('LEFT')">◀</div>
-        <div class="btn" ontouchstart="changeDir('DOWN')">▼</div>
-        <div class="btn" ontouchstart="changeDir('RIGHT')">▶</div>
     </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const scoreElement = document.getElementById("score-board");
-    const menu = document.getElementById("menu");
+    const scoreValue = document.getElementById("score-value");
+    const speedValue = document.getElementById("speed-value");
     const startBtn = document.getElementById("start-btn");
 
     // Ekran boyutuna göre ayarla
-    const isMobile = window.innerWidth < 768;
-    canvas.width = isMobile ? window.innerWidth - 40 : 600;
-    canvas.height = isMobile ? window.innerHeight * 0.5 : 400;
+    const isMobile = window.innerWidth < 1024;
+    canvas.width = isMobile ? window.innerWidth : window.innerWidth - 320;
+    canvas.height = isMobile ? window.innerHeight - 200 : window.innerHeight;
 
-    const box = 20;
-    let score = 0;
-    let gameSpeed = 120;
+    const box = 25; // Karelerin boyutu
     let snake = [];
-    let food = {};
+    let candies = []; // Çoklu şekerler
+    let dangerZones = []; // Kırmızı ölüm bölgeleri
     let d = "RIGHT";
+    let score = 0;
+    let baseSpeed = 100; // Başlangıç hızı
+    let gameSpeed = baseSpeed;
     let gameInterval;
-    let snakeColor = "#38bdf8";
-    let snakeBodyColor = "#0ea5e9";
+    let isGameOver = true;
 
-    function setSkin(head, body, btn) {
-        snakeColor = head;
-        snakeBodyColor = body;
-        document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // Ses efekti (Bip Sesi)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(frequency = 600, duration = 0.05, type = 'sine') {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = frequency;
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Ses seviyesi
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Skin (Kıyafet) Ayarları
+    let currentSkinIndex = 0;
+    const skins = [
+        { head: '#a855f7', body: '#9333ea' }, // Mor
+        { head: '#f87171', body: '#dc2626' }, // Kırmızı
+        { head: '#4ade80', body: '#16a34a' }, // Yeşil
+        { head: '#fbbf24', body: '#d97706' }  // Sarı
+    ];
+
+    function setSkin(head, body, index) {
+        currentSkinIndex = index;
+        document.querySelectorAll('.skin-btn').forEach((b, i) => {
+            b.classList.toggle('active', i === index);
+        });
+        if(!isGameOver) initGame(); // Oyun devam ederken skin değişirse oyunu sıfırla (Snake.io tarzı)
     }
 
     function initGame() {
-        snake = [{ x: 9 * box, y: 10 * box }];
-        score = 0;
-        d = "RIGHT";
-        gameSpeed = 120;
-        scoreElement.innerHTML = "Puan: " + score;
-        createFood();
+        if(isGameOver) {
+            snake = [{ x: Math.floor(canvas.width / (2 * box)) * box, y: Math.floor(canvas.height / (2 * box)) * box }];
+            d = "RIGHT";
+            score = 0;
+            gameSpeed = baseSpeed;
+            scoreValue.innerHTML = score;
+            speedValue.innerHTML = gameSpeed;
+            candies = [];
+            createInitialElements();
+            isGameOver = false;
+            startBtn.innerHTML = "OYUNU SIFIRLA";
+            playBeep(400, 0.2, 'square'); // Başlangıç sesi
+        } else {
+            clearInterval(gameInterval);
+            isGameOver = true;
+            initGame(); // Sıfırla ve yeniden başlat
+        }
+        
         if(gameInterval) clearInterval(gameInterval);
         gameInterval = setInterval(draw, gameSpeed);
-        menu.style.display = "none";
     }
 
-    function createFood() {
-        food = {
+    // Başlangıç elementlerini (Şekerler, Tehlike Bölgeleri) oluştur
+    function createInitialElements() {
+        // Tehlike Bölgeleri (Keskin Kırmızı Kareler)
+        dangerZones = [];
+        for(let i=0; i < (isMobile ? 3 : 5); i++) {
+            dangerZones.push({
+                x: Math.floor(Math.random() * (canvas.width/box)) * box,
+                y: Math.floor(Math.random() * (canvas.height/box)) * box,
+                w: box * (Math.floor(Math.random() * 3) + 2), // 2-4 box genişliğinde
+                h: box * (Math.floor(Math.random() * 3) + 2)  // 2-4 box yüksekliğinde
+            });
+        }
+        // Başlangıç Şekerleri (Bolca minik şeker)
+        for(let i=0; i < (isMobile ? 15 : 30); i++) createCandy();
+    }
+
+    function createCandy() {
+        candies.push({
             x: Math.floor(Math.random() * (canvas.width/box)) * box,
-            y: Math.floor(Math.random() * (canvas.height/box)) * box
-        };
+            y: Math.floor(Math.random() * (canvas.height/box)) * box,
+            color: Math.random() < 0.5 ? '#fbbf24' : '#f472b6' // Amber veya Pembe
+        });
     }
 
+    // Kontroller
     document.addEventListener("keydown", (e) => {
-        if(e.keyCode == 37 && d != "RIGHT") d = "LEFT";
-        else if(e.keyCode == 38 && d != "DOWN") d = "UP";
-        else if(e.keyCode == 39 && d != "LEFT") d = "RIGHT";
-        else if(e.keyCode == 40 && d != "UP") d = "DOWN";
+        if((e.keyCode == 37 || e.keyCode == 65) && d != "RIGHT") d = "LEFT";
+        else if((e.keyCode == 38 || e.keyCode == 87) && d != "DOWN") d = "UP";
+        else if((e.keyCode == 39 || e.keyCode == 68) && d != "LEFT") d = "RIGHT";
+        else if((e.keyCode == 40 || e.keyCode == 83) && d != "UP") d = "DOWN";
     });
 
     function changeDir(dir) {
@@ -218,33 +332,56 @@
     }
 
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-color');
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Yılanı çiz (Parlayan halkalar)
+        // Tehlike Bölgelerini Çiz (Keskin Kırmızı ve Belirgin)
+        dangerZones.forEach(zone => {
+            ctx.fillStyle = '#dc2626'; // Tehlike Kırmızısı
+            ctx.shadowBlur = 30; // Çok güçlü parlama
+            ctx.shadowColor = '#dc2626';
+            ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+            ctx.shadowBlur = 0; // Sıfırla
+        });
+
+        // Şekerleri Çiz (Minik ve Parlayan)
+        candies.forEach(candy => {
+            ctx.beginPath();
+            ctx.arc(candy.x + box/2, candy.y + box/2, box/3, 0, Math.PI * 2);
+            ctx.fillStyle = candy.color;
+            ctx.shadowBlur = 15; // Parlama
+            ctx.shadowColor = candy.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.closePath();
+        });
+
+        // Yılanı Çiz (Arayüz Dışında Her Şey Kompile Değişik!)
+        const skin = skins[currentSkinIndex];
         for (let i = 0; i < snake.length; i++) {
             ctx.beginPath();
-            ctx.arc(snake[i].x + box/2, snake[i].y + box/2, box/2 - 1, 0, Math.PI * 2);
-            ctx.fillStyle = (i == 0) ? snakeColor : snakeBodyColor;
-            ctx.fill();
-            
-            // Parlama efekti
-            if(i == 0) {
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = snakeColor;
+            // Kafası (0. indeks)
+            if(i === 0) {
+                // Kafa yuvarlak ve büyük, belirgin gölgeli
+                ctx.arc(snake[i].x + box/2, snake[i].y + box/2, box/2, 0, Math.PI * 2);
+                ctx.fillStyle = skin.head;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = skin.head;
+                ctx.fill();
+                // Gözler (Kafaya eklenir)
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(snake[i].x + box/4, snake[i].y + box/4, box/2, box/2); // Göz beyazı
+                ctx.fillStyle = "#000";
+                ctx.fillRect(snake[i].x + box/3, snake[i].y + box/3, box/3, box/3); // Göz bebeği
             } else {
-                ctx.shadowBlur = 0;
+                // Gövde boğumları
+                ctx.arc(snake[i].x + box/2, snake[i].y + box/2, box/2 * (1 - i/snake.length/2), 0, Math.PI * 2); // Gövde incelir
+                ctx.fillStyle = skin.body;
+                ctx.fill();
             }
+            ctx.shadowBlur = 0;
             ctx.closePath();
         }
-
-        // Elmayı çiz (Gerçekçi parlama)
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = "#ef4444";
-        ctx.fillStyle = "#ef4444";
-        ctx.beginPath();
-        ctx.arc(food.x + box/2, food.y + box/2, box/2 - 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
 
         let snakeX = snake[0].x;
         let snakeY = snake[0].y;
@@ -260,37 +397,63 @@
         if (snakeY < 0) snakeY = canvas.height - box;
         else if (snakeY >= canvas.height) snakeY = 0;
 
-        if (snakeX == food.x && snakeY == food.y) {
-            score++;
-            scoreElement.innerHTML = "Puan: " + score;
-            createFood();
-            // Hızlanma
-            if(gameSpeed > 50) {
-                clearInterval(gameInterval);
-                gameSpeed -= 2;
-                gameInterval = setInterval(draw, gameSpeed);
+        // Şeker Yeme Kontrolü
+        let ateCandy = false;
+        for(let i = candies.length - 1; i >= 0; i--) {
+            if (snakeX == candies[i].x && snakeY == candies[i].y) {
+                score++;
+                scoreValue.innerHTML = score;
+                playBeep(); // Şeker yeme sesi (bip)
+                ateCandy = true;
+                candies.splice(i, 1);
+                createCandy(); // Yeni şeker
+                // Her şeker yediğinde YAVAŞLA (Snake.io tarzı)
+                if(gameSpeed < 150) { // Maksimum yavaşlama sınırı
+                    gameSpeed += 5;
+                    speedValue.innerHTML = gameSpeed;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(draw, gameSpeed);
+                }
+                break;
             }
-        } else {
-            snake.pop();
         }
 
         let newHead = { x: snakeX, y: snakeY };
 
-        // Kendine çarpma kontrolü
-        for(let i=0; i<snake.length; i++){
-            if(newHead.x == snake[i].x && newHead.y == snake[i].y){
-                gameOver();
-                return;
+        // Ölüm Kontrolleri
+
+        // 1. Kendi Vücuduna Çarpma (Yılan büyüdüğünde ve kafa vücuda çarptığında)
+        if(score > 0) { // Yılan en az 1 şeker yemişse
+            for(let i=0; i<snake.length; i++){
+                if(newHead.x == snake[i].x && newHead.y == snake[i].y){
+                    gameOver("KENDİ VÜCUDUNA ÇARPTIN!");
+                    return;
+                }
             }
         }
 
+        // 2. Tehlike Bölgesine (Kırmızı) Çarpma
+        dangerZones.forEach(zone => {
+            if(newHead.x >= zone.x && newHead.x < zone.x + zone.w &&
+               newHead.y >= zone.y && newHead.y < zone.y + zone.h) {
+                gameOver("TEHLİKE BÖLGESİNE GİRDİN!");
+                return;
+            }
+        });
+
+        // Yılanın büyümesi
+        if (!ateCandy) {
+            snake.pop();
+        }
         snake.unshift(newHead);
     }
 
-    function gameOver() {
+    function gameOver(message) {
         clearInterval(gameInterval);
-        alert("OYUN BİTTİ! Puanın: " + score);
-        menu.style.display = "block";
+        isGameOver = true;
+        playBeep(200, 0.5, 'triangle'); // Ölüm sesi (düşük frekans)
+        alert("OYUN BİTTİ!\n" + message + "\nSkorun: " + score);
+        startBtn.innerHTML = "YENİDEN BAŞLA";
     }
 
     startBtn.onclick = initGame;
