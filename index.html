@@ -2,192 +2,143 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OPERASYON: IZMIR - READY OR NOT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OPERASYON: IZMIR - 3D TACTICAL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        :root {
-            --police-blue: #1e3a8a;
-            --danger-red: #991b1b;
-            --overlay: rgba(0, 0, 0, 0.7);
-        }
-
-        body {
-            margin: 0; background: #000; color: white;
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; touch-action: none;
-            display: flex; align-items: center; justify-content: center; height: 100vh;
-        }
-
-        /* Oyun Sahnesi */
-        #game-screen {
-            position: relative; width: 100vw; height: 100vh;
-            background: url('https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1287&auto=format&fit=crop') no-repeat center center;
-            background-size: cover;
-            display: none;
-        }
-
-        /* Karartma ve Atmosfer */
-        #vignette {
-            position: absolute; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 30%, black 120%);
-            pointer-events: none;
-        }
-
-        /* Silah ve Crosshair */
-        #crosshair {
-            position: absolute; top: 50%; left: 50%;
-            width: 30px; height: 30px;
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 50%; transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        
         /* Arayüz (HUD) */
         #hud {
-            position: absolute; bottom: 20px; left: 20px;
-            background: var(--overlay); padding: 15px;
-            border-left: 5px solid var(--police-blue);
+            position: absolute; bottom: 20px; left: 20px; color: #00ff00;
+            text-shadow: 0 0 5px #00ff00; font-family: 'Courier New', monospace;
+            pointer-events: none; z-index: 10;
         }
 
-        /* Giriş Menüsü */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            border: 2px solid #00ff00; border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
+        }
+
+        /* Gece Görüşü Efekti */
+        #nvg-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(0, 50, 0, 0.4) 100%);
+            pointer-events: none; border: 1px solid rgba(0, 255, 0, 0.1);
+            box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.2);
+            z-index: 5;
+        }
+
         #menu {
-            text-align: center; z-index: 10; padding: 20px;
-            background: var(--overlay); border: 2px solid var(--police-blue);
-        }
-
-        #status-msg {
-            position: absolute; top: 20%; width: 100%;
-            text-align: center; font-size: 24px; font-weight: bold;
-            color: #fbbf24; text-shadow: 2px 2px 4px #000;
-        }
-
-        /* Düşman/Hedef */
-        .target {
-            position: absolute; width: 150px; height: 250px;
-            background: url('https://i.imgur.com/vH9YkC9.png') no-repeat center center; /* Örnek düşman görseli */
-            background-size: contain; cursor: crosshair;
-            transition: opacity 0.2s;
+            position: absolute; width: 100%; height: 100%; background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; color: #00ff00; text-align: center;
         }
 
         button {
-            padding: 15px 30px; font-size: 18px; cursor: pointer;
-            background: var(--police-blue); color: white; border: none;
-            margin-top: 20px; font-weight: bold;
+            padding: 15px 30px; background: transparent; border: 2px solid #00ff00;
+            color: #00ff00; font-size: 20px; cursor: pointer; margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1 style="color: #3b82f6;">OPERASYON: İZMİR</h1>
-        <p>Baskın Noktası: Eski Fabrika Sığınağı</p>
-        <p style="font-size: 12px; color: #94a3b8;">"Ready or Not" Taktik Modu Aktif</p>
-        <button onclick="startGame()">OPERASYONU BAŞLAT</button>
+        <h1>OPERASYON: İZMİR <br> <span style="font-size: 15px;">3D TACTICAL SIMULATION</span></h1>
+        <button onclick="startOperation()">SİSTEMİ BAŞLAT</button>
     </div>
 
-    <div id="game-screen" onclick="shoot(event)">
-        <div id="vignette"></div>
-        <div id="crosshair"></div>
-        <div id="status-msg"></div>
-
-        <div id="hud">
-            <div>DURUM: <span id="police-status">Sızma Yapıldı</span></div>
-            <div>MERMİ: <span id="ammo">15</span> / 45</div>
-            <div>SAĞLIK: %<span id="health">100</span></div>
-        </div>
+    <div id="nvg-overlay"></div>
+    <div id="crosshair"></div>
+    <div id="hud">
+        STATUS: INFILTRATED<br>
+        AMMO: <span id="ammo">15</span>/45<br>
+        THREATS ELIMINATED: <span id="score">0</span>
     </div>
 
-    <audio id="snd-shoot" src="https://www.soundjay.com/mechanical/gun-shot-01.mp3"></audio>
-    <audio id="snd-reload" src="https://www.soundjay.com/mechanical/gun-cocking-01.mp3"></audio>
+    <script>
+        let scene, camera, renderer, weapon;
+        let score = 0;
+        let ammo = 15;
 
-<script>
-    let health = 100;
-    let ammo = 15;
-    let score = 0;
-    let isGameRunning = false;
-
-    function startGame() {
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
-        isGameRunning = true;
-        spawnEnemy();
-        document.getElementById('status-msg').innerText = "KAPIYI PATLAT! İÇERİ GİR!";
-        setTimeout(() => { document.getElementById('status-msg').innerText = ""; }, 3000);
-    }
-
-    function shoot(e) {
-        if (!isGameRunning || ammo <= 0) {
-            if(ammo <= 0) reload();
-            return;
+        function startOperation() {
+            document.getElementById('menu').style.display = 'none';
+            init();
+            animate();
         }
 
-        // Ateş sesi ve mekaniği
-        const snd = document.getElementById('snd-shoot');
-        snd.currentTime = 0;
-        snd.play();
+        function init() {
+            // 1. Sahne ve Kamera Kurulumu
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020502);
+            scene.fog = new THREE.Fog(0x020502, 1, 15); // Sis efekti
 
-        ammo--;
-        document.getElementById('ammo').innerText = ammo;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        // Geri tepme efekti (Ekran sallanması)
-        document.getElementById('game-screen').style.transform = "translateY(-5px)";
-        setTimeout(() => { document.getElementById('game-screen').style.transform = "translateY(0)"; }, 500);
-    }
+            // 2. Işıklandırma (Gece Görüşü Işığı)
+            const light = new THREE.PointLight(0x00ff00, 1, 50);
+            camera.add(light);
+            scene.add(camera);
 
-    function reload() {
-        document.getElementById('status-msg').innerText = "ŞARJÖR DEĞİŞTİRİLİYOR...";
-        document.getElementById('snd-reload').play();
-        setTimeout(() => {
-            ammo = 15;
-            document.getElementById('ammo').innerText = ammo;
-            document.getElementById('status-msg').innerText = "";
-        }, 1500);
-    }
+            // 3. Yer ve Duvarlar (Basit bir koridor)
+            const floorGeo = new THREE.PlaneGeometry(20, 100);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
 
-    function spawnEnemy() {
-        if (!isGameRunning) return;
+            // 4. Silah Modeli (Basit bir kutu ama silah gibi duracak)
+            const weaponGeo = new THREE.BoxGeometry(0.1, 0.1, 0.5);
+            const weaponMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
+            weapon = new THREE.Mesh(weaponGeo, weaponMat);
+            weapon.position.set(0.2, -0.2, -0.5); // Ekranın sağ altında
+            camera.add(weapon);
 
-        const enemy = document.createElement('div');
-        enemy.className = 'target';
-        enemy.style.left = Math.random() * (window.innerWidth - 150) + "px";
-        enemy.style.top = (Math.random() * (window.innerHeight - 300) + 100) + "px";
-        
-        enemy.onclick = function(e) {
-            e.stopPropagation();
-            playBloodEffect(e.pageX, e.pageY);
-            this.remove();
-            score++;
-            document.getElementById('police-status').innerText = score + " Şüpheli Etkisiz";
-            setTimeout(spawnEnemy, Math.random() * 2000 + 500);
-        };
+            // 5. Ateş Etme Mekaniği
+            window.addEventListener('mousedown', shoot);
+            window.addEventListener('touchstart', (e) => { e.preventDefault(); shoot(); });
+        }
 
-        document.getElementById('game-screen').appendChild(enemy);
-
-        // Düşman ateş etme süresi (Eğer 2 saniye içinde vurmazsan canın gider)
-        setTimeout(() => {
-            if (enemy.parentElement) {
-                takeDamage();
-                enemy.remove();
-                setTimeout(spawnEnemy, 1000);
+        function shoot() {
+            if (ammo <= 0) {
+                ammo = 15;
+                document.getElementById('ammo').innerText = ammo;
+                return;
             }
-        }, 2000);
-    }
+            ammo--;
+            document.getElementById('ammo').innerText = ammo;
 
-    function takeDamage() {
-        health -= 20;
-        document.getElementById('health').innerText = health;
-        document.getElementById('game-screen').style.boxShadow = "inset 0 0 100px red";
-        setTimeout(() => { document.getElementById('game-screen').style.boxShadow = "none"; }, 3000);
+            // Ateş Işığı
+            const flash = new THREE.PointLight(0xffaa00, 2, 10);
+            flash.position.set(weapon.position.x, weapon.position.y, weapon.position.z - 0.5);
+            camera.add(flash);
+            setTimeout(() => { camera.remove(flash); }, 50);
 
-        if (health <= 0) {
-            alert("OPERASYON BAŞARISIZ! Vuruldun.\nEtkisiz hale getirilen suçlu: " + score);
-            location.reload();
+            // Geri Tepme
+            camera.position.y += 0.05;
+            setTimeout(() => { camera.position.y -= 0.05; }, 50);
         }
-    }
 
-    function playBloodEffect(x, y) {
-        // Basit vuruş efekti yapılabilir
-    }
-</script>
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Silahın hafif sallanması (Nefes alma efekti)
+            const time = Date.now() * 0.002;
+            weapon.position.y = -0.2 + Math.sin(time) * 0.01;
+            
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
