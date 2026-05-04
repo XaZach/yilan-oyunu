@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SNAKE_İO_PRO</title>
+    <title>ENES_SNAKE_PRO_V2</title>
     <style>
         body { 
             margin: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; 
             background: #87CEEB url('https://images.unsplash.com/photo-1534088568595-a066f77c3ed2?auto=format&fit=crop&w=1000&q=80') no-repeat center center fixed;
             background-size: cover; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .header { background: rgba(255,255,255,0.85); padding: 12px 30px; border-radius: 25px; margin-top: 15px; backdrop-filter: blur(8px); text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 2px solid #fff; }
+        .header { background: rgba(255,255,255,0.85); padding: 12px 30px; border-radius: 25px; margin-top: 15px; backdrop-filter: blur(8px); text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 2px solid #fff; z-index: 10; }
         .stats { color: #2c3e50; font-weight: bold; font-size: 22px; }
-        .rank { color: #27ae60; font-weight: bold; font-size: 16px; margin-top: 3px; }
+        .rank { color: #d35400; font-weight: bold; font-size: 16px; margin-top: 3px; }
         canvas { 
             border: 10px solid white; box-shadow: 0 15px 40px rgba(0,0,0,0.2); 
             background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px);
@@ -21,21 +22,22 @@
         .btn { 
             width: 70px; height: 70px; background: white; border: none; color: #3498db; 
             border-radius: 20px; font-size: 30px; box-shadow: 0 5px 0 #bdc3c7; 
-            touch-action: manipulation;
+            touch-action: manipulation; cursor: pointer;
         }
         .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #bdc3c7; background: #f1f1f1; }
-        #restart-btn { display: none; padding: 12px 30px; background: #3498db; color: white; font-weight: bold; border: none; margin-top: 10px; border-radius: 25px; cursor: pointer; font-size: 18px; }
-        .floating-score { position: absolute; color: #e67e22; font-weight: bold; font-size: 28px; pointer-events: none; text-shadow: 2px 2px 0 white; animation: floatUp 1.5s forwards; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
+        #restart-btn { display: none; padding: 12px 30px; background: #e74c3c; color: white; font-weight: bold; border: none; margin-top: 10px; border-radius: 25px; cursor: pointer; font-size: 18px; z-index: 20; }
+        .floating-score { position: absolute; color: #e67e22; font-weight: bold; font-size: 28px; pointer-events: none; text-shadow: 2px 2px 0 white; animation: floatUp 1s forwards; z-index: 30;}
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-80px); } }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="stats">🍎 Puan: <span id="score">0</span></div>
-        <div class="rank">Unvan: <span id="rank-text">Yumurta 🥚</span></div>
+        <div class="rank">Rütbe: <span id="rank-text">Çaylak Operatör 🛡️</span></div>
     </div>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <button id="restart-btn" onclick="resetGame()">Hadi Baştan! 🔄</button>
+    <button id="restart-btn" onclick="resetGame()">Yeniden Başlat 🔄</button>
+    
     <div class="controls">
         <button class="btn" style="grid-column: 2;" onmousedown="move('UP')" ontouchstart="move('UP')">▲</button>
         <button class="btn" style="grid-column: 1;" onmousedown="move('LEFT')" ontouchstart="move('LEFT')">◀</button>
@@ -54,7 +56,17 @@
         let snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
         let dx = grid, dy = 0, score = 0, running = true, food = {x: 100, y: 100};
         let nextDir = {x: grid, y: 0};
-        let gameSpeed = 150; // Başlangıç hızı (Yavaş)
+        let gameSpeed = 150;
+
+        // Klavye Kontrolleri (PC için)
+        document.addEventListener('keydown', (e) => {
+            if (natureAudio.paused) natureAudio.play();
+            const key = e.key.toLowerCase();
+            if ((key === 'w' || e.key === 'ArrowUp') && dy === 0) move('UP');
+            if ((key === 's' || e.key === 'ArrowDown') && dy === 0) move('DOWN');
+            if ((key === 'a' || e.key === 'ArrowLeft') && dx === 0) move('LEFT');
+            if ((key === 'd' || e.key === 'ArrowRight') && dx === 0) move('RIGHT');
+        });
 
         function playInceBeep() {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -70,22 +82,34 @@
             div.className = "floating-score";
             div.innerText = "+10";
             div.style.left = "50%";
-            div.style.top = "200px";
+            div.style.top = "250px";
             document.body.appendChild(div);
-            setTimeout(() => div.remove(), 1500);
+            setTimeout(() => div.remove(), 1000);
         }
 
         function updateRank() {
             const rt = document.getElementById("rank-text");
-            if (score < 50) rt.innerText = "Yumurta 🥚";
-            else if (score < 100) rt.innerText = "Yavru Yılan 🐍";
-            else if (score < 150) rt.innerText = "Çimen Gezgini 🌱";
-            else if (score < 200) rt.innerText = "Elma Meraklısı 🍎";
-            else if (score < 300) rt.innerText = "Hızlı Piton 💨";
-            else rt.innerText = "Yılan Kral 👑";
+            const ranks = [
+                {p: 0, t: "Çaylak Operatör 🛡️"},
+                {p: 50, t: "Saha Ajanı 🕵️"},
+                {p: 100, t: "Kıdemli Takipçi 🎖️"},
+                {p: 150, t: "Baskın Uzmanı 💣"},
+                {p: 200, t: "Gölge Avcı 👤"},
+                {p: 250, t: "Elit Muhafız ⚔️"},
+                {p: 300, t: "Başkomiser 👮"},
+                {p: 350, t: "Operasyon Lideri ⚡"},
+                {p: 400, t: "Efsanevi Ejder 🐉"}
+            ];
+            let currentRank = ranks[0].t;
+            ranks.forEach(r => { if(score >= r.p) currentRank = r.t; });
+            rt.innerText = currentRank;
         }
 
         function drawSnake() {
+            const head = snake[0];
+            const distToFood = Math.hypot(head.x - food.x, head.y - food.y);
+            const isNearFood = distToFood < 50; // Elmaya yaklaşınca tetiklenir
+
             ctx.strokeStyle = "#2ecc71";
             ctx.lineCap = "round"; ctx.lineJoin = "round";
             ctx.lineWidth = 18;
@@ -96,27 +120,30 @@
             });
             ctx.stroke();
 
-            // Kafa detayları
-            const head = snake[0];
+            // Gözler
             ctx.fillStyle = "white";
             ctx.beginPath(); ctx.arc(head.x+7, head.y+7, 3, 0, 7); ctx.arc(head.x+13, head.y+7, 3, 0, 7); ctx.fill();
             ctx.fillStyle = "black";
             ctx.beginPath(); ctx.arc(head.x+7, head.y+7, 1.2, 0, 7); ctx.arc(head.x+13, head.y+7, 1.2, 0, 7); ctx.fill();
             
-            ctx.strokeStyle = "red"; ctx.lineWidth = 2;
-            ctx.beginPath();
-            if(dx > 0) { ctx.moveTo(head.x+20, head.y+10); ctx.lineTo(head.x+26, head.y+10); }
-            else if(dx < 0) { ctx.moveTo(head.x, head.y+10); ctx.lineTo(head.x-6, head.y+10); }
-            ctx.stroke();
+            // Otomatik Ağız ve Dil (Elmaya yaklaşınca)
+            if (isNearFood) {
+                ctx.strokeStyle = "red"; ctx.lineWidth = 3;
+                ctx.beginPath();
+                if(dx > 0) { ctx.moveTo(head.x+20, head.y+10); ctx.lineTo(head.x+28, head.y+10); ctx.lineTo(head.x+30, head.y+8); }
+                else if(dx < 0) { ctx.moveTo(head.x, head.y+10); ctx.lineTo(head.x-8, head.y+10); ctx.lineTo(head.x-10, head.y+8); }
+                else if(dy > 0) { ctx.moveTo(head.x+10, head.y+20); ctx.lineTo(head.x+10, head.y+28); ctx.lineTo(head.x+8, head.y+30); }
+                else if(dy < 0) { ctx.moveTo(head.x+10, head.y); ctx.lineTo(head.x+10, head.y-8); ctx.lineTo(head.x+8, head.y-10); }
+                ctx.stroke();
+            }
         }
 
         function drawFood() {
-            // Gerçekçi Elma
             ctx.fillStyle = "#e74c3c";
             ctx.beginPath(); ctx.arc(food.x+10, food.y+10, 10, 0, 7); ctx.fill();
-            ctx.fillStyle = "rgba(255,255,255,0.5)"; // Parlama efekti
+            ctx.fillStyle = "rgba(255,255,255,0.5)";
             ctx.beginPath(); ctx.arc(food.x+7, food.y+7, 3, 0, 7); ctx.fill();
-            ctx.fillStyle = "#27ae60"; // Yaprak
+            ctx.fillStyle = "#27ae60"; 
             ctx.fillRect(food.x+9, food.y-2, 3, 5);
         }
 
@@ -145,8 +172,7 @@
                 createFloatingScore();
                 updateRank();
                 createFood();
-                // Her elma yediğinde oyun hızlanır (Max hıza kadar)
-                if (gameSpeed > 60) gameSpeed -= 5;
+                if (gameSpeed > 50) gameSpeed -= 3;
             } else { snake.pop(); }
         }
 
@@ -155,6 +181,8 @@
                 x: Math.floor(Math.random() * (400/grid)) * grid,
                 y: Math.floor(Math.random() * (400/grid)) * grid
             };
+            // Yılanın üstünde doğmasın
+            if(snake.some(p => p.x === food.x && p.y === food.y)) createFood();
         }
 
         function resetGame() {
@@ -168,10 +196,11 @@
 
         function main() {
             if (!running) return;
-            setTimeout(() => {
-                ctx.clearRect(0,0,400,400);
-                drawFood(); drawSnake(); advanceSnake(); main();
-            }, gameSpeed);
+            ctx.clearRect(0,0,400,400);
+            drawFood(); 
+            drawSnake(); 
+            advanceSnake(); 
+            setTimeout(main, gameSpeed);
         }
 
         createFood(); main();
